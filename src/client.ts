@@ -1,4 +1,4 @@
-import { WedeClientOptions, WedeEvent, WedeZone, WedeSyncBatch, WedeConnectivityStatus, WedeResponse, WedeParser, WedeParserField } from './types.js'
+import { WedeClientOptions, WedeEvent, WedeZone, WedeSyncBatch, WedeConnectivityStatus, WedeResponse, WedeParser, WedeParserField, WedeTeam, WedeScoredTeam, WedeMission, WedeBilling, MissionStatus } from './types.js'
 import { WedeError, WedeAuthError, WedeNetworkError } from './errors.js'
 import { OfflineQueue } from './queue.js'
 
@@ -151,6 +151,49 @@ export class WedeClient {
 
   async deleteWebhook(webhookId: string): Promise<void> {
     return this.request('DELETE', '/v1/webhooks/' + webhookId)
+  }
+
+
+  // Teams
+  async listTeams(params?: { tenant_id?: string }): Promise<WedeResponse<WedeTeam[]>> {
+    const qs = params?.tenant_id ? '?tenant_id=' + params.tenant_id : ''
+    return this.request('GET', '/v1/teams' + qs)
+  }
+
+  async getTeam(teamId: string): Promise<WedeResponse<WedeTeam>> {
+    return this.request('GET', '/v1/teams/' + teamId)
+  }
+
+  async updateMemberLocation(teamId: string, memberId: string, lat: number, lng: number): Promise<void> {
+    return this.request('PATCH', `/v1/teams/${teamId}/members/${memberId}/location`, { lat, lng })
+  }
+
+  // Dispatch
+  async scoreTeams(params: { lat: number; lng: number; vertical?: string; priority?: string; required_equipment?: string[] }): Promise<WedeResponse<WedeScoredTeam[]>> {
+    return this.request('POST', '/v1/teams/dispatch/score', params)
+  }
+
+  async dispatch(params: { event_id: string; team_id: string; notes?: string; event_lat?: number; event_lng?: number }): Promise<WedeResponse<Record<string, unknown>>> {
+    return this.request('POST', '/v1/teams/dispatch', params)
+  }
+
+  // Missions
+  async listMissions(params?: { team_id?: string; status?: MissionStatus; limit?: number }): Promise<WedeResponse<WedeMission[]>> {
+    const qs = params ? '?' + new URLSearchParams(params as Record<string, string>).toString() : ''
+    return this.request('GET', '/v1/missions' + qs)
+  }
+
+  async getMission(missionId: string): Promise<WedeResponse<WedeMission>> {
+    return this.request('GET', '/v1/missions/' + missionId)
+  }
+
+  async updateMissionStatus(missionId: string, status: MissionStatus, feedback?: Record<string, unknown>): Promise<WedeResponse<WedeMission>> {
+    return this.request('PATCH', `/v1/missions/${missionId}/status`, { status, feedback })
+  }
+
+  // Billing
+  async getBilling(): Promise<WedeResponse<WedeBilling>> {
+    return this.request('GET', '/v1/tenant/billing')
   }
 
   // Tenant

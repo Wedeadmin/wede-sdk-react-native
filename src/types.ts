@@ -78,3 +78,80 @@ export interface WedeResponse<T> {
   request_id: string
   timestamp: string
 }
+
+export type MissionStatus = 'CREATED' | 'SENT' | 'ACK' | 'ON_ROUTE' | 'ON_SITE' | 'COMPLETED' | 'FAILED'
+
+export interface WedeTeamMember {
+  id: string
+  team_id: string
+  name: string
+  role: string
+  status: 'available' | 'on_mission' | 'offline'
+  lat?: number
+  lng?: number
+  last_seen?: string
+}
+
+export interface WedeTeam {
+  id: string
+  tenant_id: string
+  name: string
+  type: string
+  vertical: string
+  status: 'available' | 'on_mission' | 'offline'
+  zone_id?: string
+  members?: WedeTeamMember[]
+  created_at: string
+  updated_at: string
+}
+
+export interface WedeScoredTeam {
+  team_id: string
+  team_name: string
+  distance_km: number
+  eta_min: number
+  score: number
+  recommended: boolean
+  channel: 'internet' | 'sms' | 'voice'
+}
+
+export interface WedeMission {
+  id: string
+  event_id: string
+  team_id: string
+  status: MissionStatus
+  channel_used: string
+  vertical?: string
+  priority?: string
+  payload?: Record<string, unknown>
+  feedback?: Record<string, unknown>
+  notes?: string
+  event_lat?: number
+  event_lng?: number
+  dispatched_at: string
+  sent_at?: string
+  ack_at?: string
+  on_route_at?: string
+  on_site_at?: string
+  completed_at?: string
+  failed_at?: string
+}
+
+export interface WedeBilling {
+  tenant_id: string
+  country: string
+  current_plan: {
+    id: string
+    name: string
+    display_name: string
+    max_events_per_year: number
+    pricing: { price_yearly: number; currency: string } | null
+  } | null
+  usage: {
+    events_this_year: number
+    sms_used: number
+    voice_used: number
+    dispatches_total: number
+    missions_total: number
+  }
+}
