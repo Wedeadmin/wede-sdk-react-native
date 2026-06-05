@@ -191,6 +191,20 @@ export class WedeClient {
     return this.request('PATCH', `/v1/missions/${missionId}/status`, { status, feedback })
   }
 
+  // Catalog
+  async listCatalogActions(vertical?: string): Promise<any> {
+    const qs = vertical ? '?vertical=' + vertical : ''
+    return this.request('GET', '/v1/catalog/actions' + qs)
+  }
+
+  async createCatalogAction(action: { vertical: string; code: string; name: string; description?: string }): Promise<any> {
+    return this.request('POST', '/v1/catalog/actions', action)
+  }
+
+  async deleteCatalogAction(actionId: string): Promise<void> {
+    return this.request('DELETE', '/v1/catalog/actions/' + actionId)
+  }
+
   // Billing
   async getBilling(): Promise<WedeResponse<WedeBilling>> {
     return this.request('GET', '/v1/tenant/billing')
