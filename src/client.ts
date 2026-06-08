@@ -1,5 +1,7 @@
-import { WedeClientOptions, WedeEvent, WedeZone, WedeSyncBatch, WedeConnectivityStatus, WedeResponse, WedeParser, WedeParserField, WedeTeam, WedeScoredTeam, WedeMission, WedeBilling, MissionStatus } from './types.js'
+import { WedeClientOptions, WedeEvent, WedeZone, WedeSyncBatch, WedeConnectivityStatus, WedeResponse, WedeParser, WedeParserField, WedeTeam, WedeScoredTeam, WedeMission, WedeBilling, MissionStatus, WedeCatalogAction } from './types.js'
 import { WedeError, WedeAuthError, WedeNetworkError } from './errors.js'
+import { WedeOfflineDispatch } from './offlineDispatch.js'
+import { WedeCache } from './cache.js'
 import { OfflineQueue } from './queue.js'
 
 const DEFAULT_BASE_URL = 'https://api.wede.pt'
@@ -12,6 +14,8 @@ export class WedeClient {
   private readonly timeout: number
   private readonly retries: number
   private readonly queue: OfflineQueue | null
+  readonly offline: WedeOfflineDispatch | null
+  readonly cache: WedeCache | null
 
   constructor(options: WedeClientOptions) {
     if (!options.apiKey) throw new WedeAuthError('API key is required')
@@ -20,6 +24,8 @@ export class WedeClient {
     this.timeout = options.timeout ?? DEFAULT_TIMEOUT
     this.retries = options.retries ?? DEFAULT_RETRIES
     this.queue = options.storage ? new OfflineQueue(options.storage) : null
+    this.offline = options.storage ? new WedeOfflineDispatch(options.storage) : null
+    this.cache = options.storage ? new WedeCache(options.storage) : null
   }
 
   private async request<T>(method: string, path: string, body?: unknown, attempt = 1): Promise<T> {
@@ -218,4 +224,49 @@ export class WedeClient {
   async getUsage(from: string, to: string): Promise<WedeResponse<Record<string, unknown>>> {
     return this.request('GET', '/v1/tenant/usage?from=' + from + '&to=' + to)
   }
+
+  async registerDevice(params: {
+    device_id: string
+    platform: 'ios' | 'android' | 'web' | 'other'
+    app_version?: string
+  }): Promise<{ device_id: string; registered: boolean }> {
+    return this.request('POST', '/v1/devices/register', params)
+  }
+
+  async syncDeviceQueue(params: {
+    device_id: string
+    last_received_seq: number
+    dispatches: Array<{
+      sequence_number: number
+      action_id?: string
+      event_lat?: number
+      event_lng?: number
+      vertical?: string
+      priority?: string
+      payload?: Record<string, unknown>
+      created_offline_at: string
+    }>
+  }): Promise<{
+    accepted: number[]
+    duplicates: number[]
+    failed: number[]
+    server_seq: number
+    device_last_received_seq: number
+    synced_at: string
+  }> {
+    return this.request('POST', '/v1/devices/sync', params)
+  }
+
+  async refreshCache(): Promise<void> {
+    if (!this.cache) return
+    try {
+      const [teamsRes, catalogRes] = await Promise.all([
+        this.request<{ data: WedeTeam[] }>('GET', '/v1/teams'),
+        this.request<{ data: WedeCatalogAction[] }>('GET', '/v1/catalog/actions'),
+      ])
+      await this.cache.setTeams(teamsRes.data)
+      await this.cache.setCatalog(catalogRes.data)
+    } catch {}
+  }
+
 }

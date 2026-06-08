@@ -100,6 +100,9 @@ export interface WedeTeam {
   vertical: string
   status: 'available' | 'on_mission' | 'offline'
   zone_id?: string
+  zone_lat?: number
+  zone_lng?: number
+  equipment?: string[]
   members?: WedeTeamMember[]
   created_at: string
   updated_at: string
@@ -154,4 +157,23 @@ export interface WedeBilling {
     dispatches_total: number
     missions_total: number
   }
+}
+
+export interface WedeCatalogAction {
+  id: string
+  tenant_id: string
+  vertical: string
+  code: string
+  name: string
+  description?: string
+  is_active: boolean
+  created_at: string
+  updated_at: string
+}
+
+export interface WedeCreateCatalogAction {
+  vertical: string
+  code: string
+  name: string
+  description?: string
 }
