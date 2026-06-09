@@ -269,4 +269,26 @@ export class WedeClient {
     } catch {}
   }
 
+  async requestBackup(params: {
+    mission_id: string
+    event_id: string
+    event_lat?: number
+    event_lng?: number
+  }): Promise<Record<string, unknown>> {
+    return this.request('POST', '/v1/teams/dispatch', {
+      event_id: params.event_id,
+      notes: `Backup requested by field operator for mission ${params.mission_id}`,
+      event_lat: params.event_lat,
+      event_lng: params.event_lng,
+    })
+  }
+
+  async updateDispatchSettings(settings: {
+    dispatch_mode?: boolean
+    dispatch_threshold?: number
+    reinforcement_timeout_min?: number
+  }): Promise<Record<string, unknown>> {
+    return this.request('PATCH', '/v1/tenant/dispatch-settings', settings)
+  }
+
 }
